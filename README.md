@@ -1,6 +1,24 @@
 ## Micronaut 3.8.8 and RxJava3 Project
-Demo project to show change in behavior of the reactive streams
+### Overview
+Recently upgraded from micronaut 3.3.4 to 3.8.7, also updated all `rxjava2` to `rxjava3` and now can no longer use the 
+Micronaut Declarative Client with `Flowable.blocking*` calls against a reactive controller. 
 
+The same functionality worked for months in production; now it is not possible to stream from the endpoint.  Previously 
+the `http.client.read-timeout` and `read-idle-timeout` variables were set to their default values
+
+This is a Demo project to show change in behavior of the reactive streams when upgrading to `micronaut-3.8.8` and `rxjava3`.  
+
+This project shows that i can no longer use the `Flowable.blockingNext()` or `Flowable.blockingIterable()` to stream
+results from a reactive endpoint that uses a `Flowable` and `@ExcecuteOn` annotation to offload the work
+
+### Expected Behavior
+The client would return a stream of `IngestReport` objects and the app using the client could step through the stream 
+
+### New (Actual) Behavior
+A `ReadTimeoutException` is thrown while the client waits for the Flowable to begin because the endpoint does some
+pre-processing that takes up to 60 seconds.  Thus the `ReadTimeoutException` is thrown after 10 seconds.
+
+### Previous Behavior
 In `micronaut-3.3.4` (plugin version `3.3.2`) and `rxjava2` it was possible to do the following:
 
 Declare a `Flowable` method in a parent inerface, and then extend this interface in a declarative client
@@ -26,7 +44,6 @@ class LoanController{
     }
 }
 ```
-
 i used to be able to call the `Flowable.blockingIterable()` from an app and get an iterator and the code would happily wait 
 (without setting the `http.client.read-timeout` or changing the `read-idle-timeout`) and the following would just work:
 
